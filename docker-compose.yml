@@ -1,0 +1,99 @@
+services:
+  # MySQL Database
+  database:
+    image: mysql:8.0
+    container_name: money-transfer-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_DATABASE: money_transfer_db
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - money-transfer-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Node.js Application
+  app:
+    build:
+      context: .
+      target: production
+    container_name: money-transfer-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_USER: appuser
+      DB_PASSWORD: apppassword123
+      DB_NAME: money_transfer_db
+      JWT_SECRET: f56cb389e066363f8b08ec56f36295a7c3451cf2314fae46f6d14758a1a1bbb797c13e0c1227ec931040405dc5d607b402147c9d6b9c14f6a6a7b626faf60afa
+      JWT_EXPIRES_IN: 24h
+      RAVEN_BASE_URL: https://atlas.getravenbank.com/api/v1
+      RAVEN_PUBLIC_KEY: your-raven-public-key
+      RAVEN_SECRET_KEY: your-raven-secret-key
+      WEBHOOK_SECRET: b99276264161ed564ea885dd006a7ab0145646bcf2d36af39bcb1f9302ea7636
+      BCRYPT_ROUNDS: 12
+      TRANSFER_LIMIT: 10000
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - money-transfer-network
+    volumes:
+      - ./logs:/app/logs
+
+  # Development version (optional)
+  app-dev:
+    build:
+      context: .
+      target: development
+    container_name: money-transfer-app-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_USER: appuser
+      DB_PASSWORD: apppassword123
+      DB_NAME: money_transfer_db
+      JWT_SECRET: f56cb389e066363f8b08ec56f36295a7c3451cf2314fae46f6d14758a1a1bbb797c13e0c1227ec931040405dc5d607b402147c9d6b9c14f6a6a7b626faf60afa
+      JWT_EXPIRES_IN: 24h
+      RAVEN_BASE_URL: https://atlas.getravenbank.com/api/v1
+      RAVEN_PUBLIC_KEY: your-raven-public-key
+      RAVEN_SECRET_KEY: your-raven-secret-key
+      WEBHOOK_SECRET: b99276264161ed564ea885dd006a7ab0145646bcf2d36af39bcb1f9302ea7636
+      BCRYPT_ROUNDS: 12
+      TRANSFER_LIMIT: 10000
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - money-transfer-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    profiles:
+      - dev
+
+volumes:
+  mysql_data:
+
+networks:
+  money-transfer-network:
+    driver: bridge 
