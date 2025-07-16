@@ -107,7 +107,3 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Files to exclude as requested by user
-.cursor/
-money-transfer-app-prd-with-repo.md
-express-typescript-development-rules.md 
